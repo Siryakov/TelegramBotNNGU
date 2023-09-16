@@ -5,19 +5,26 @@ public class ScheduleItem {
     // Приватные поля для хранения данных
     private String discipline;      // Дисциплина
     private String building;        // Здание
+    private String auditorium;      //Аудитория
     private String beginLesson;     // Начало занятия
+    private String endLesson;       //Конец занятия
     private String lecturerTitle;   // Звание лектора
-
+    private String dayOfWeekString; // День недели
+    private String date; //Дата
     public ScheduleItem() {
         // Пустой конструктор, который может пригодиться при создании объектов через Spring
     }
 
     // Конструктор класса, который принимает значения для полей при создании объекта
-    public ScheduleItem(String discipline, String building, String beginLesson, String lecturerTitle) {
+    public ScheduleItem(String discipline, String building,String auditorium, String beginLesson,String endLesson, String lecturerTitle ,String dayOfWeekString, String date) {
         this.discipline = discipline;
         this.building = building;
+        this.auditorium = auditorium;
         this.beginLesson = beginLesson;
+        this.endLesson = endLesson;
         this.lecturerTitle = lecturerTitle;
+        this.dayOfWeekString =dayOfWeekString;
+        this.date = date;
     }
 
     // Геттеры для получения данных из объекта
@@ -42,12 +49,44 @@ public class ScheduleItem {
         return lecturerTitle;
     }
 
+    public String getDayOfWeekString() {
+        return dayOfWeekString;
+    }
+
+    public void setDayOfWeekString(String dayOfWeekString) {
+        this.dayOfWeekString = dayOfWeekString;
+    }
+    public String getDate() {
+        return date;
+    }
+
+    public void setDate(String date) {
+        this.date = date;
+    }
+    public String getEndLesson() {
+        return endLesson;
+    }
+
+    public void setEndLesson(String endLesson) {
+        this.endLesson = endLesson;
+    }
+    public String getAuditorium() {
+        return auditorium;
+    }
+
+    public void setAuditorium(String auditorium) {
+        this.auditorium = auditorium;
+    }
     // Переопределение метода toString для удобного вывода информации о объекте
     @Override
     public String toString() {
-        return "Предмет: " + discipline + "\n" +
-                "Корпус: " + building + "\n" +
-                "Начало: " + beginLesson + "\n" +
-                "Преподаватель: " + lecturerTitle + "\n";
+        return  date +" "+ dayOfWeekString + "\n" +
+                beginLesson + " - " + endLesson +  "\n" +
+                discipline + "\n" +
+                building + " " + auditorium +"\n" +
+                lecturerTitle + "\n";
     }
+
+
+
 }

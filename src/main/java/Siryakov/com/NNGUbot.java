@@ -123,7 +123,6 @@ public class NNGUbot extends TelegramLongPollingBot {
             default -> unknownCommand(chatId);
         }
     }
-
     private void startCommand(Long chatId, String userName) {
         var text = """
         Добро пожаловать,сладкая булочка, %s!

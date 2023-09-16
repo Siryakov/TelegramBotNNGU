@@ -8,10 +8,7 @@ import org.apache.http.impl.client.HttpClients;
 import org.apache.http.util.EntityUtils;
 
 import java.io.IOException;
-import java.text.SimpleDateFormat;
 import java.util.ArrayList;
-import java.util.Calendar;
-import java.util.Date;
 import java.util.List;
 
 
@@ -19,16 +16,7 @@ import com.google.gson.JsonObject;
 public class ScheduleParser {
 
     public static String getScheduleForToday(String formattedDate, String formattedEndDate) {
-//        // Получаем текущую дату
-//        Calendar calendar = Calendar.getInstance();
-//
-//        // Прибавляем 6 дней к текущей дате
-//        calendar.add(Calendar.DAY_OF_MONTH, 1);
-//
-//        // Форматируем даты в строки
-//        SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy.MM.dd");
-//        String formattedDate = dateFormat.format(new Date());
-//        String formattedEndDate = dateFormat.format(calendar.getTime());
+
 
         // Создаем HTTP-клиент и GET-запрос с использованием сегодняшней и будущей дат
         HttpClient httpClient = HttpClients.createDefault();
@@ -70,11 +58,15 @@ public class ScheduleParser {
             // Извлекаем значения полей из объекта JSON
             String discipline = item.get("discipline").getAsString();
             String building = item.get("building").getAsString();
+            String auditorium = item.get("auditorium").getAsString();
             String beginLesson = item.get("beginLesson").getAsString();
+            String endLesson = item.get("endLesson").getAsString();
             String lecturerTitle = item.get("lecturer_title").getAsString();
+            String date = item.get("date").getAsString();
+            String dayOfWeekString = item.get("dayOfWeekString").getAsString();
 
             // Создаем новый объект ScheduleItem и добавляем его в список
-            ScheduleItem scheduleItem = new ScheduleItem(discipline, building, beginLesson, lecturerTitle);
+            ScheduleItem scheduleItem = new ScheduleItem(discipline, building,auditorium ,beginLesson,endLesson, lecturerTitle,date ,dayOfWeekString);
             scheduleItems.add(scheduleItem);
         }
 
