@@ -16,7 +16,9 @@ public class BotInitializer {
     @Autowired
     public BotInitializer(TelegramBot telegramBot) {
         this.telegramBot = telegramBot;
+
     }
+
 
     @EventListener({ContextRefreshedEvent.class})
     public void init()throws TelegramApiException {
@@ -27,4 +29,5 @@ public class BotInitializer {
 
         }
     }
+
 }

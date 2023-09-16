@@ -18,17 +18,17 @@ import java.util.List;
 import com.google.gson.JsonObject;
 public class ScheduleParser {
 
-    public static String getScheduleForToday() {
-        // Получаем текущую дату
-        Calendar calendar = Calendar.getInstance();
-
-        // Прибавляем 6 дней к текущей дате
-        calendar.add(Calendar.DAY_OF_MONTH, 1);
-
-        // Форматируем даты в строки
-        SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy.MM.dd");
-        String formattedDate = dateFormat.format(new Date());
-        String formattedEndDate = dateFormat.format(calendar.getTime());
+    public static String getScheduleForToday(String formattedDate, String formattedEndDate) {
+//        // Получаем текущую дату
+//        Calendar calendar = Calendar.getInstance();
+//
+//        // Прибавляем 6 дней к текущей дате
+//        calendar.add(Calendar.DAY_OF_MONTH, 1);
+//
+//        // Форматируем даты в строки
+//        SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy.MM.dd");
+//        String formattedDate = dateFormat.format(new Date());
+//        String formattedEndDate = dateFormat.format(calendar.getTime());
 
         // Создаем HTTP-клиент и GET-запрос с использованием сегодняшней и будущей дат
         HttpClient httpClient = HttpClients.createDefault();

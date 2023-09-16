@@ -45,9 +45,9 @@ public class ScheduleItem {
     // Переопределение метода toString для удобного вывода информации о объекте
     @Override
     public String toString() {
-        return "Discipline: " + discipline + "\n" +
-                "Building: " + building + "\n" +
-                "Begin Lesson: " + beginLesson + "\n" +
-                "Lecturer Title: " + lecturerTitle + "\n";
+        return "Предмет: " + discipline + "\n" +
+                "Корпус: " + building + "\n" +
+                "Начало: " + beginLesson + "\n" +
+                "Преподаватель: " + lecturerTitle + "\n";
     }
 }
