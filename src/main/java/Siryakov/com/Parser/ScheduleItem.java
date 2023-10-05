@@ -1,4 +1,4 @@
-package Siryakov.com;
+package Siryakov.com.Parser;
 
 // Объявление класса ScheduleItem
 public class ScheduleItem {

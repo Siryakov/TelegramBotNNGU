@@ -1,4 +1,4 @@
-package Siryakov.com;
+package Siryakov.com.Parser;
 
 import com.google.gson.JsonArray;
 import com.google.gson.JsonParser;
@@ -73,4 +73,7 @@ public class ScheduleParser {
         // Возвращаем список объектов ScheduleItem
         return scheduleItems;
     }
+
+
+
 }

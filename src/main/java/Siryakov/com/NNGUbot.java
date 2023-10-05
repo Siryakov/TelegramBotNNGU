@@ -1,6 +1,9 @@
 package Siryakov.com;
 
 import Siryakov.com.Config.BotConfig;
+import Siryakov.com.Parser.GroupParser;
+import Siryakov.com.Parser.ScheduleItem;
+import Siryakov.com.Parser.ScheduleParser;
 import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Component;
 import org.telegram.telegrambots.bots.TelegramLongPollingBot;
@@ -10,14 +13,15 @@ import org.telegram.telegrambots.meta.api.objects.replykeyboard.ReplyKeyboardMar
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.KeyboardRow;
 import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
 import java.text.SimpleDateFormat;
-import java.util.ArrayList;
-import java.util.Calendar;
-import java.util.Date;
-import java.util.List;
+import java.util.*;
 
 @Component
 @AllArgsConstructor
 public class NNGUbot extends TelegramLongPollingBot {
+
+    GroupParser groupParser = new GroupParser();
+    private Map<Long, Boolean> isWaitingForGroupInput = new HashMap<>();
+    private final Map<Long, String> userGroups = new HashMap<>(); // Для хранения номера группы
     private final BotConfig botConfig;
 
     @Override
@@ -31,102 +35,81 @@ public class NNGUbot extends TelegramLongPollingBot {
     }
 
     private static final String START = "/start";
-    private static final String DAY = "Расписание на день";
-    private static final String DAY2 = "Расписание на два дня";
-    private static final String DAY7 = "Расписание на неделю";
-    private static final String HELP = "Помощь";
+    private static final String DAY = "/day";
+    private static final String DAY2 = "/twoday";
+    private static final String DAY7 = "/week";
+    private static final String GROUP = "/group";
+    private static final String HELP = "/help";
+    private final ScheduleParser scheduleParser = new ScheduleParser();
 
     public void onUpdateReceived(Update update) {
-        // Получаем текущую дату
-        Calendar calendar = Calendar.getInstance();
-        // Форматируем даты в строки
-        SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy.MM.dd");
-        String formattedDate = dateFormat.format(new Date());
-
         if (!update.hasMessage() || !update.getMessage().hasText()) {
             return;
         }
-        var message = update.getMessage().getText(); // сохраняем сообщение пользователя в переменную
-        var chatId = update.getMessage().getChatId(); // идентификатор чата, что бы отправить ответ именно тому пользователю
 
-        // проверка, какую команду прислал пользователь
+        var message = update.getMessage().getText();
+        var chatId = update.getMessage().getChatId();
+
         switch (message) {
             case START -> {
                 String userName = update.getMessage().getChat().getUserName();
                 startCommand(chatId, userName);
                 sendKeyboardMessage(chatId);
             }
-            case DAY -> {
-                // Прибавляем 0 дней к текущей дате
-                calendar.add(Calendar.DAY_OF_MONTH, 0);
-                String formattedEndDate = dateFormat.format(calendar.getTime());
+            case DAY, DAY2, DAY7 -> {
+                int daysToAdd = message.equals(DAY) ? 1 : (message.equals(DAY2) ? 2 : 7);
+                Calendar calendar = Calendar.getInstance();
+                SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy.MM.dd");
 
-                ScheduleParser scheduleParser = new ScheduleParser();
+                for (int i = 0; i < daysToAdd; i++) {
+                    String formattedDate = dateFormat.format(calendar.getTime());
+                    String jsonData = scheduleParser.getScheduleForToday(formattedDate, formattedDate);
+                    processScheduleData(chatId, jsonData);
 
-                // Получаем JSON-данные для сегодняшней даты
-                String jsonData = scheduleParser.getScheduleForToday(formattedDate, formattedEndDate);
-                if (jsonData != null) {
-                    // Парсим JSON и получаем список ScheduleItem
-                    List<ScheduleItem> scheduleItems = scheduleParser.parseScheduleData(jsonData);
-
-                    // Выводим данные на экран
-                    for (ScheduleItem item : scheduleItems) {
-                        sendMessage(chatId, item.toString());
-                    }
-                } else {
-                    sendMessage(chatId, "Не удалось получить JSON-данные.");
+                    // Увеличиваем дату на 1 день для следующего запроса (если есть)
+                    calendar.add(Calendar.DAY_OF_MONTH, 1);
                 }
             }
-            case DAY2 -> {
-                // Прибавляем 1 дней к текущей дате
-                calendar.add(Calendar.DAY_OF_MONTH, 1);
-                String formattedEndDate = dateFormat.format(calendar.getTime());
-
-                ScheduleParser scheduleParser = new ScheduleParser();
-
-                // Получаем JSON-данные для сегодняшней даты
-                String jsonData = scheduleParser.getScheduleForToday(formattedDate, formattedEndDate);
-                if (jsonData != null) {
-                    // Парсим JSON и получаем список ScheduleItem
-                    List<ScheduleItem> scheduleItems = scheduleParser.parseScheduleData(jsonData);
-
-                    // Выводим данные на экран
-                    for (ScheduleItem item : scheduleItems) {
-                        sendMessage(chatId, item.toString());
-                    }
-                } else {
-                    sendMessage(chatId, "Не удалось получить JSON-данные.");
-                }
-            }
-            case DAY7 -> {
-                // Прибавляем 7 дней к текущей дате
-                calendar.add(Calendar.DAY_OF_MONTH, 7);
-                String formattedEndDate = dateFormat.format(calendar.getTime());
-
-                ScheduleParser scheduleParser = new ScheduleParser();
-
-                // Получаем JSON-данные для сегодняшней даты
-                String jsonData = scheduleParser.getScheduleForToday(formattedDate, formattedEndDate);
-                if (jsonData != null) {
-                    // Парсим JSON и получаем список ScheduleItem
-                    List<ScheduleItem> scheduleItems = scheduleParser.parseScheduleData(jsonData);
-
-                    // Выводим данные на экран
-                    for (ScheduleItem item : scheduleItems) {
-                        sendMessage(chatId, item.toString());
-                    }
-                } else {
-                    sendMessage(chatId, "Не удалось получить JSON-данные.");
-                }
+            case GROUP -> {
+                // При получении команды /group, переводим пользователя в режим ввода номера группы
+                sendMessage(chatId, "Введите номер группы:");
+                isWaitingForGroupInput.put(chatId, true); // Устанавливаем флаг ожидания ввода группы
             }
             case HELP -> helpCommand(chatId);
-            default -> unknownCommand(chatId);
+            default -> {
+                if (isWaitingForGroupInput.getOrDefault(chatId, false)) {
+                    // Пользователь находится в режиме ввода номера группы
+                    String groupName = message; // Сохраняем текст сообщения в переменную
+                    // Далее можно выполнить дополнительную обработку, например, сохранить номер группы в базе данных
+                    // и отправить сообщение "Ваша группа сохранена" пользователю
+                    sendMessage(chatId, "Ваша группа сохранена: " + groupName);
+                    isWaitingForGroupInput.put(chatId, false); // Завершаем режим ввода номера группы
+                } else {
+                    unknownCommand(chatId);
+                }
+            }
+        }
+    }
+
+    private void processScheduleData(Long chatId, String jsonData) {
+        if (jsonData != null) {
+            List<ScheduleItem> scheduleItems = scheduleParser.parseScheduleData(jsonData);
+
+            if (!scheduleItems.isEmpty()) {
+                for (ScheduleItem item : scheduleItems) {
+                    sendMessage(chatId, item.toString());
+                }
+            } else {
+                sendMessage(chatId, "Расписание пусто.");
+            }
+        } else {
+            sendMessage(chatId, "Не удалось получить JSON-данные.");
         }
     }
     private void startCommand(Long chatId, String userName) {
         var text = """
         Добро пожаловать,сладкая булочка, %s!
-        Здесь вы сможете узнать рассписание группы 382007-3.
+        Здесь вы сможете узнать расписание на деньписание группы 382007-3.
         Для этого воспользуйтесь командами:
           Расписание на день
           Расписание на два дня
@@ -226,4 +209,41 @@ public class NNGUbot extends TelegramLongPollingBot {
             e.printStackTrace();
         }
     }
+
+    // Функция для запроса сообщения у пользователя
+    private void requestUserInput(Long chatId,Update update) {
+        SendMessage sendMessage = new SendMessage();
+        sendMessage.setChatId(chatId);
+        sendMessage.setText("Введите номер группы:");
+        sendMessage.setReplyMarkup(createCancelKeyboard());
+
+        // Добавим специальную команду для обработки ответов
+        sendMessage.setReplyToMessageId(update.getMessage().getMessageId());
+
+        try {
+            execute(sendMessage);
+        } catch (TelegramApiException e) {
+            e.printStackTrace();
+        }
+    }
+
+    // Функция для создания клавиатуры для отмены операции
+    private ReplyKeyboardMarkup createCancelKeyboard() {
+        ReplyKeyboardMarkup keyboardMarkup = new ReplyKeyboardMarkup();
+        keyboardMarkup.setResizeKeyboard(true);
+        keyboardMarkup.setOneTimeKeyboard(true);
+
+        KeyboardRow keyboardRow = new KeyboardRow();
+        keyboardRow.add("Отмена");
+
+        List<KeyboardRow> keyboard = new ArrayList<>();
+        keyboard.add(keyboardRow);
+
+        keyboardMarkup.setKeyboard(keyboard);
+
+        return keyboardMarkup;
+    }
+
+
+
 }
