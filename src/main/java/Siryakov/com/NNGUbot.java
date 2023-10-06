@@ -1,5 +1,5 @@
 package Siryakov.com;
-
+import Siryakov.com.User;
 import Siryakov.com.Config.BotConfig;
 import Siryakov.com.Parser.GroupParser;
 import Siryakov.com.Parser.ScheduleItem;
@@ -18,11 +18,13 @@ import java.util.*;
 @Component
 @AllArgsConstructor
 public class NNGUbot extends TelegramLongPollingBot {
+    private final UserRepository userRepository;
+    private final BotConfig botConfig;
 
     GroupParser groupParser = new GroupParser();
     private Map<Long, Boolean> isWaitingForGroupInput = new HashMap<>();
     private final Map<Long, String> userGroups = new HashMap<>(); // Для хранения номера группы
-    private final BotConfig botConfig;
+    private final ScheduleParser scheduleParser = new ScheduleParser();
 
     @Override
     public String getBotUsername() {
@@ -40,7 +42,6 @@ public class NNGUbot extends TelegramLongPollingBot {
     private static final String DAY7 = "/week";
     private static final String GROUP = "/group";
     private static final String HELP = "/help";
-    private final ScheduleParser scheduleParser = new ScheduleParser();
 
     public void onUpdateReceived(Update update) {
         if (!update.hasMessage() || !update.getMessage().hasText()) {
@@ -50,9 +51,12 @@ public class NNGUbot extends TelegramLongPollingBot {
         var message = update.getMessage().getText();
         var chatId = update.getMessage().getChatId();
 
+        // Извлекаем имя пользователя
+        org.telegram.telegrambots.meta.api.objects.User telegramUser = update.getMessage().getFrom();
+        String userName = telegramUser.getUserName();
+
         switch (message) {
             case START -> {
-                String userName = update.getMessage().getChat().getUserName();
                 startCommand(chatId, userName);
                 sendKeyboardMessage(chatId);
             }
@@ -82,6 +86,7 @@ public class NNGUbot extends TelegramLongPollingBot {
                     String groupName = message; // Сохраняем текст сообщения в переменную
                     // Далее можно выполнить дополнительную обработку, например, сохранить номер группы в базе данных
                     // и отправить сообщение "Ваша группа сохранена" пользователю
+                    saveUserAndGroupToDatabase(userName, groupName);
                     sendMessage(chatId, "Ваша группа сохранена: " + groupName);
                     isWaitingForGroupInput.put(chatId, false); // Завершаем режим ввода номера группы
                 } else {
@@ -90,6 +95,33 @@ public class NNGUbot extends TelegramLongPollingBot {
             }
         }
     }
+
+
+    // Метод для сохранения пользователя и номера группы в базе данных
+    private void saveUserAndGroupToDatabase(String userName, String groupName) {
+        Optional<User> existingUserOptional = userRepository.findByUsername(userName);
+
+        if (existingUserOptional.isPresent()) {
+            User existingUser = existingUserOptional.get();
+            // Обновляем номер группы
+            existingUser.setGroupNumber(groupName);
+            userRepository.save(existingUser);
+        } else {
+            // Создаем нового пользователя
+            User newUser = new User();
+            newUser.setUsername(userName);
+            newUser.setGroupNumber(groupName);
+            userRepository.save(newUser);
+        }
+    }
+
+
+
+
+
+
+
+
 
     private void processScheduleData(Long chatId, String jsonData) {
         if (jsonData != null) {
@@ -164,7 +196,7 @@ public class NNGUbot extends TelegramLongPollingBot {
         SendMessage message = new SendMessage();
 
         // Устанавливаем чат ID
-        message.setChatId(chatId);
+        message.setChatId(String.valueOf(chatId));
 
         // Устанавливаем текст сообщения
         message.setText("Выберите действие:");
@@ -213,7 +245,7 @@ public class NNGUbot extends TelegramLongPollingBot {
     // Функция для запроса сообщения у пользователя
     private void requestUserInput(Long chatId,Update update) {
         SendMessage sendMessage = new SendMessage();
-        sendMessage.setChatId(chatId);
+        sendMessage.setChatId(String.valueOf(chatId));
         sendMessage.setText("Введите номер группы:");
         sendMessage.setReplyMarkup(createCancelKeyboard());
 
